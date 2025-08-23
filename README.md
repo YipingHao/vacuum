@@ -1,25 +1,25 @@
 # 双层次CPU-GPGPU一体化指令集Vaccum
 
-#### 介绍
+## 介绍
 双层次CPU-GPGPU一体化指令集Vaccum以及它的手册。
 
-#### 软件架构
+## 软件架构
 软件架构说明
 
 
-#### 安装教程
+## 安装教程
 
 1.  xxxx
 2.  xxxx
 3.  xxxx
 
-#### 使用说明
+## 使用说明
 
 1.  xxxx
 2.  xxxx
 3.  xxxx
 
-#### 参与贡献
+## 参与贡献
 
 1.  Fork 本仓库
 2.  新建 Feat_xxx 分支
@@ -27,11 +27,15 @@
 4.  新建 Pull Request
 
 
-#### 特技
+## 开源许可协议
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+本项目的许可协议是CC BY-ND 4.0 详见LICENSE文件。它有大概三个核心特征
+
+1. 必须保留原作者署名信息；
+
+2. 禁止对本指令集的核心规范（包括但不限于指令定义、寄存器结构、操作码等）进行修改、改编或衍生；
+
+3. 允许自由使用、复制、分发本规范（商业/非商业场景均可），但不得基于本规范创建衍生版本。
+
+换言之，Vaccum指令集作为一种开源的规范，使用者可以自由的使用，但是却不能自由的更改。
+
