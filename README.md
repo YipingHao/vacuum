@@ -59,7 +59,7 @@ PTX对社会公开，有着精细的指令集手册。然而SASS常常是英伟�
 至于LLVM-some ISA构成的双层次系统，确实更接近于PTX/SASS的关系，甚至英伟达介绍PTX的时候还拿LLVM作为一个例子来做比喻告诉你PTX是什么。但是它们是有一些核心差异的，就是PTX/SASS是一体设计的同一个体系结构系统的一部分。英伟达在设计新架构的SASS时，会同步规划PTX的接口扩展（比如Ampere架构的张量核心，PTX层面新增`mma`指令，SASS层面同步实现硬件加速）；而LLVM IR与具体ISA的关系是“单向适配”——LLVM不会为某款新CPU的ISA修改自身IR设计，CPU厂商也不会因为LLVM的特性调整ISA。这种“双向协同”vs“单向适配”，造成了灵活性的差距。举个例子，我们拥有了LLVM之后并不能随心所欲的更换ISA而没有代价，而SASS每代都可以依据硬件设计师的心意做出修改，并且几乎不付出代价。也许这种差异的根源在于没有CPU厂商公开指认LLVM就是自己的虚拟指令集，这一点很关键。LLVM本质是“编译器中间表示”，其设计目标是“适配所有ISA”，而非“为某个ISA服务”；而PTX的设计目标是“为SASS服务”，甚至可以说“PTX的存在就是为了让SASS能自由迭代”。这种定位差异导致：LLVM对ISA的“灵活性”是“兼容已有”，而SASS的“灵活性”是“创造新的”。
 
 <figure>
-  <img src="./graphics/C1.svg" alt="C1.png">
+  <img src="./graphics/home/C1.svg" alt="C1.png">
   <figcaption>图1。</figcaption>
 </figure>
 
