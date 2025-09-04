@@ -69,7 +69,7 @@ Vacuum 标识符的格式（命名规则）是严格规定的，必须遵守以�
 3. **大小写敏感**：C语言区分大小写字母，因此大小写不同的标识符会被视为不同的名称。Vaccum与之相同。  
    示例：`sum`、`Sum`、`SUM` 是三个不同的标识符。
 
-4. **关键字禁用**：是Vacuum没有关键字的概念，所有的起到关键字作用的东西开头都有特殊符号表明它的开始比如`#end`。  
+4. **关键字禁用**：是Vacuum没有关键字的概念，所有的起到关键字作用的东西开头都有特殊符号使它与标识符相区分比如`#end`或者`` `true` ``或者$mem$。  
 
 5. **长度限制**：Vacuum标准不限制标识符的长度。
 
@@ -83,9 +83,9 @@ unit: {
     Const: const;
 }
 type: {
-    single: complex;
-    null: complex "<"  ">";
-    nontrival: complex "<" list ">";
+    single: "<" complex ">";
+    null: "<" complex "<"  ">" ">";
+    nontrival: "<" complex "<" list ">" ">";
 }
 list:{
     single: unit;
@@ -389,9 +389,9 @@ Vacuum运算的操作数是变量。变量分为寄存器变量和存储器变�
 虚拟基本指令的汇编格式 
 
 ```
-$add$ r1: r2, r3;
+add: r1 = r2, r3;
 
-$call.sin(real)$ r1: r1; 
+call.sin(real): r1 = r1; 
 
 ```
 
