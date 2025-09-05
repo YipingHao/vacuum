@@ -73,30 +73,7 @@ Vacuum 标识符的格式（命名规则）是严格规定的，必须遵守以�
 
 5. **长度限制**：Vacuum标准不限制标识符的长度。
 
-### 类型名
 
-合法的类型名称的格式接近C++中类型的格式，这种相对高级别的格式是为了汇编代码的人类可读性和高级语言向下Vacuum虚拟层编译的方便与统一，的文法规则伪代码如下:
-
-```
-unit: {
-    Type: type;
-    Const: const;
-}
-type: {
-    single: "<" complex ">";
-    null: "<" complex "<"  ">" ">";
-    nontrival: "<" complex "<" list ">" ">";
-}
-list:{
-    single: unit;
-    multi: list "-" unit;
-}
-complex:{
-    single: id;
-    multi: complex "::" id;
-}
-
-```
 
 
 
@@ -359,6 +336,39 @@ Vacuum 虚拟层指令定义了一系列的物理参数字面值，称为机器�
 - 局部共享存储器容量：合法的形式是`` `ShareMemCapacity` ``。是一个关键机器字面值，无符号整型。必须是1024的非负整数倍数。是每个核心上物理可容纳的线程私有存储域的容量。
 
 ## 复合数据类型
+
+复合数据类型分为结构体与共用体。它们在定义之前必须指定类型名。
+
+### 类型名
+
+Vacuum中所有代表类型的名字均需要用`<`和`>`包裹。包括规范定义的基本类型名和用户自定义的复合类型名均是如此。
+
+合法的类型名称的格式接近C++中类型的格式，这种相对高级别的格式是为了汇编代码的人类可读性和高级语言向下Vacuum虚拟层编译的方便与统一，合法的类型名的文法规则伪代码如下:
+
+```
+unit: {
+    Type: type;
+    Const: const;
+}
+type: {
+    single: "<" complex ">";
+    null: "<" complex "<"  ">" ">";
+    nontrival: "<" complex "<" list ">" ">";
+}
+list:{
+    single: unit;
+    multi: list "-" unit;
+}
+complex:{
+    single: id;
+    multi: complex "::" id;
+}
+
+```
+
+### 结构体
+
+
 
 
 # 函数与过程
