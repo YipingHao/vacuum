@@ -281,14 +281,9 @@ L2缓存则可以是存储物理寻址的。虚实转换发生在一二级缓存
 - 它叫Yac。
   
 
-<div style="text-align: center; margin: 10px 0;">
-  <a 
-    href="https://gitee.com/hao-yiping/yac" 
-    style="display: inline-block; padding: 10px 20px; background-color: #f0f0f0; border-radius: 5px; text-decoration: none; color: #333; border: 1px solid #eee;"
-    target="_blank"
-  >
-    Yet Another C
-  </a>
+<div align="center">
+[Yet Another C]
+https://gitee.com/hao-yiping/yac
 </div>
 
 
