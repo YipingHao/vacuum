@@ -280,36 +280,16 @@ L2缓存则可以是存储物理寻址的。虚实转换发生在一二级缓存
 - 他应该在语法层和标准库层提供一些编译器前端自动器的某些功能对应的组件。并且假定Vacuum作为自己和这些组件的IR。它需要承担为形形色色的编程语言运行在Vacuum上所必须的编译器前端和解释器构造的工作。
 - 它叫Yac。
   
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <title>卡片式链接居中</title>
-    <style>
-       .card-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-            text-decoration: none;
-            color: #333;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s ease;
-        }
-       .card-link:hover {
-            background-color: #e0e0e0;
-        }
-       .center-div {
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <div class="center-div">
-        <a href="https://gitee.com/hao-yiping/yac" class="card-link">Yet Another C</a>
-    </div>
-</body>
-</html>
+
+<div style="text-align: center; margin: 10px 0;">
+  <a 
+    href="https://gitee.com/hao-yiping/yac" 
+    style="display: inline-block; padding: 10px 20px; background-color: #f0f0f0; border-radius: 5px; text-decoration: none; color: #333; border: 1px solid #eee;"
+    target="_blank"
+  >
+    Yet Another C
+  </a>
+</div>
 
 
 ## 一个现实世界中的Vacuum指令集的系统落地计划
