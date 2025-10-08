@@ -235,6 +235,12 @@ https://gitee.com/hao-yiping/fluctu
  - 每一个控制流指令从属的计算指令数目没有下限，可以是0或者1
  
 
+ <figure>
+  <img src="./graph/home/C5_1.svg" alt="C5.png">
+  <figcaption>图5：以斐波那契数列计算为例展示离分式控制流图指令集的指令组织方式。</figcaption>
+</figure>
+
+
 离分式设计不是这种显式的控制流图指令集的唯一实现。
 
 #### 离分式指令集下的局部缓存
