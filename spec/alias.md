@@ -91,6 +91,17 @@ ptr-!alias[ stack ] ptr4;
 | **```\|\|```** | 逻辑或 | 最低 | 从左到右 |
 
 
+### 空集的表示
+
+空集是本系统中的一个基础概念。**两个默认规则下互斥的集合，它们的交集即为空集**。例如，根据互斥属性表，任何集合与“强互斥”集合的交集都为空集。 在别名判断中，如果一个指针的域被定义为两个互斥域的“与”操作（如 `int && float`），且根据规则它们的交集为空，则该指针的从属域为空集。本规则没有显式指定空集的语法。
+
+### 根节点默认规则
+
+- **空规则体**：当规则体为空（即 `-!alias[]`）时，该指针被解释为从属于**根节点（AliasRoot）**。这是基于安全性优先的保守性原则，确保不会因疏忽导致危险的激进优化。
+
+- **未标注规则**：如果指针声明中**完全省略** `-!alias[...]` 注解，编译器同样应默认该指针从属于根节点。
+
+
 ## 通过集合运算判断指针别名
 
 
@@ -160,11 +171,72 @@ ptr-!alias[ stack ] ptr4;
 因为 `int` 和 `float` 节点在父节点 `type` 下均为 `WeakExclusive` 属性，根据核心规则表，它们默认已无交。此类声明被禁止，以维护整个别名分析系统的可靠性与一致性。
 
 
+您提出的这两点补充非常重要，它们让规范更加严谨和实用。以下是为您补充的“错误处理”章节内容。
+
 ## 错误处理
 
+本规范要求编译器在处理别名模型定义时，应进行必要的静态检查。一旦发现以下错误，编译器应报告错误并中止编译过程，以确保程序语义的清晰和正确。
+
+### 编译时错误
+
+以下情况会触发编译时错误：
+
+| 错误类型 | 触发条件 | 示例（错误） | 说明 |
+| :--- | :--- | :--- | :--- |
+| **节点重名** | 使用 `#AliasTree` 指令创建了同名的节点。 | `#AliasTree(A, ...)`<br>`#AliasTree(A, ...)` | 节点标识符必须在整个树中唯一。 |
+| **引用未定义父节点** | 在 `#AliasTree` 指令中，`parent_id` 指向一个未定义的节点。 | `#AliasTree(Child, UndefinedParent, ...)` | 父节点必须先行定义。 |
+| **非法互斥属性** | 在 `#AliasTree` 指令中，`attri_id` 不是四个预定义的属性标识符之一。 | `#AliasTree(N, P, InvalidAttr)` | 属性必须是 `Exclusive`, `WeakExclusive`, `WeakInclusive`, `Inclusive` 之一。 |
+| **指针域表达式语法错误** | `-!alias[...]` 内的集合表达式存在语法错误，如括号不匹配、使用了未定义的节点标识符或运算符错误。 | `-!alias[ (int && stack ] ptr;` （括号不匹配）<br>`-!alias[ unknownNode ] ptr;` （节点未定义） | 表达式必须符合规定的类C语法。 |
+| **补充规则冲突** | 使用 `#AliasNoIntersection` 试图将默认规则中已无交的两个域声明为无交。 | `#AliasNoIntersection(int, float)` （假设它们默认已弱互斥） | 补充规则只能收紧约束，不能放松。 |
 
 
 
+### 小结：编译器何时会报错？
+
+总结来说，编译器在处理本别名模型时，会在以下两类主要情况下报错：
+
+1.  **模型定义不合法**：包括但不限于抽象域树的结构性问题（如重名、未定义引用）和规则本身的语法错误。这类错误在编译初期即可发现，必须由程序员修正。
+2.  **规则逻辑冲突**：试图通过补充规则放松默认的、更严格的别名关系（例如，强制让两个互斥的域相交）。这违反了系统设计的“保守性”基本原则，编译器不应接受。
+
+通过以上的错误处理规定，可以确保别名模型信息在源头上是正确和一致的，为后续的别名分析和优化奠定可靠的基础。
 
 
+# 文法规则伪代码
 
+
+## 1. 抽象域树定义文法
+
+```
+// 抽象域树定义部分
+Program ::= (AliasTreeDefinition | AliasNoIntersection)*
+
+AliasTreeDefinition ::= "#AliasTree" "(" NodeName "," ParentNode "," Attribute ")" 
+
+NodeName ::= Identifier
+ParentNode ::= Identifier
+Attribute ::= "Exclusive" | "WeakExclusive" | "WeakInclusive" | "Inclusive"
+
+AliasNoIntersection ::= "#AliasNoIntersection" "(" NodeName "," NodeName ")"
+```
+
+## 2. 指针别名注解文法
+
+```
+// 指针别名注解部分（嵌入在变量声明中）
+VariableDeclaration ::= TypeSpecifier AliasAnnotation? Identifier 
+
+AliasAnnotation ::= "-!alias" "[" DomainExpression "]"
+                   | "-!alias" "[" "]"  // 空规则体，表示根节点
+
+DomainExpression ::= DomainTerm
+                   | DomainExpression "||" DomainTerm
+
+DomainTerm ::= DomainFactor
+              | DomainTerm "&&" DomainFactor
+
+DomainFactor ::= NodeName
+               | "!" DomainFactor
+               | "(" DomainExpression ")"
+
+NodeName ::= Identifier  // 引用已定义的抽象域节点
+```
