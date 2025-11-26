@@ -10,7 +10,7 @@
 
 ## 节点属性
 
-既然全体抽象域之间存在一个树状关系，我们也可以称每个抽象域为节点。我们的抽象规则规定，每一个节点必须通过一个关键字设定与它的兄弟的节点的关系。这种关系名字叫做**互斥属性**。互斥属性分为四类，分别是：强互斥，弱互斥，弱相交，强相交。某一个节点A与它的兄弟节点B相交是否非空，几乎由这两个节点的互斥属性决定。它们相交运算的结果如下。
+既然全体抽象域之间存在一个树状关系，我们也可以称每个**抽象域**为**节点**。我们的抽象规则规定，每一个节点必须通过一个关键字设定与它的兄弟的节点的关系。这种关系名字叫做**互斥属性**。互斥属性分为四类，分别是：强互斥，弱互斥，弱相交，强相交。某一个节点A与它的兄弟节点B相交是否非空，几乎由这两个节点的互斥属性决定。它们相交运算的结果如下。
 
 |   相交关系  | 强互斥 | 弱互斥 | 弱相交 | 强相交 |
 |----------- |--------|-------|--------|-------|
@@ -28,7 +28,7 @@
 
 ## 建立抽象域构成的树
 
-通过 `#aliasTree`指令建立抽象树的节点。语法规则如下 `#aliasTree(name_id, parent_id, attri_id)`。这种建立规则仅仅能出现在函数定义之间。
+通过 `#AliasTree`指令建立抽象树的节点。语法规则如下 `#AliasTree(name_id, parent_id, attri_id)`。这种建立规则仅仅能出现在函数定义之间。
 
 `name_id`是节点名标识符，这棵树的任意两个节点不得重名。根节点的名字为`AliasRoot`,此外编译器会自动为这个根生成一个虚拟的父节点`AliasRootRoot`。根节点的虚拟父节点是为了简化实现程序的复杂度，有些判断需要提升到根节点，此时如果它有一个父节点，那么可以用同一套逻辑处理根节点和用户自定义节点。所以编译器和程序员手工添加的新节点均不得与上述两节点重名。`parent_id`指定父节点标识符，而`attri_id`决定了它的互斥属性，四个属性对应的标识符分别为。
 
@@ -40,39 +40,55 @@
 例子 
 
 ```
-#aliasTree(type, AliasRoot, Inclusive)
-#aliasTree(scope, AliasRoot, Inclusive)
+#AliasTree(type, AliasRoot, Inclusive)
+#AliasTree(scope, AliasRoot, Inclusive)
 
-#aliasTree(int, type, WeakExclusive)
-#aliasTree(float, type, WeakExclusive)
-#aliasTree(void, type, Inclusive)
+#AliasTree(int, type, WeakExclusive)
+#AliasTree(float, type, WeakExclusive)
+#AliasTree(void, type, Inclusive)
 
-#aliasTree(int64, int, WeakExclusive)
-#aliasTree(intDefault, int, Inclusive)
-#aliasTree(int32, int, WeakExclusive)
+#AliasTree(int64, int, WeakExclusive)
+#AliasTree(intDefault, int, Inclusive)
+#AliasTree(int32, int, WeakExclusive)
 
-#aliasTree(float64, float, WeakExclusive)
-#aliasTree(floatDefault, float, Inclusive)
-#aliasTree(float32, float, WeakExclusive)
+#AliasTree(float64, float, WeakExclusive)
+#AliasTree(floatDefault, float, Inclusive)
+#AliasTree(float32, float, WeakExclusive)
 
-#aliasTree(stack, scope, WeakExclusive) 
-#aliasTree(heap, scope, WeakExclusive)
+#AliasTree(stack, scope, WeakExclusive) 
+#AliasTree(heap, scope, WeakExclusive)
 
-#aliasTree(restrict, AliasRoot, Exclusive)
+#AliasTree(restrict, AliasRoot, Exclusive)
 ```
+
 
 ### 规定指针从属的域
 
-一个指针类型可以按照C语言风格的交并非的集合运算指定它从属的虚拟集合。这种风格如下，支持小括号指定运算的优先级，或运算`||`表示两个节点的并集，与运算`&&`表示两个节点的交集。非运算`!`左右在一个独立的节点上表示一个节点在**根节点**中的补集合（注意不是父节点）。优先级设定与C语言一致。
+指针所属的抽象域通过特定的工具链注释来规定。该注释以通用符号 `-!` 开头，后接关键字 `alias`（在Vacuum的语法规范中它实际是个标识符），最后用方括号 `[]` 包裹描述域的规则体。完整的格式为 `-!alias[rules]`，其中方括号是强制性的。
 
-```
-ptr-!alias[ (!int && type) && (!heap && scope)] ptr_1;
-ptr-!alias[ (int && stack) || (real && heap)] ptr_2;
+规则体采用类C语言的集合运算语法来定义指针所属的虚拟集合，支持使用小括号 `()` 明确运算优先级：
+*   **与运算** `&&` 表示集合的**交集**。
+*   **或运算** `||` 表示集合的**并集**。
+*   **非运算** `!` 应用于单个节点，表示该节点在**整个抽象域树的根节点（AliasRoot）** 中的补集（请注意，不是其直接父节点）。
+
+运算符优先级与C语言规定一致。以下是指针声明的示例：
+
+```c
+ptr-!alias[ (!int && type) && (!heap && scope) ] ptr_1;
+ptr-!alias[ (int && stack) || (float && heap) ] ptr_2;
 
 ptr-!alias[ int ] ptr3;
-ptr-!alias[ stack] ptr4;
+ptr-!alias[ stack ] ptr4;
 ```
 
+
+下表是C语言中这三个逻辑运算符的优先级和结合性。
+
+| 运算符 | 名称 | 优先级 | 结合性 |
+| :--- | :--- | :---: | :---: |
+| **`!`** | 逻辑非 | 最高 | 从右到左 |
+| **`&&`** | 逻辑与 | 居中 | 从左到右 |
+| **```\|\|```** | 逻辑或 | 最低 | 从左到右 |
 
 
 ## 通过集合运算判断指针别名
@@ -104,9 +120,47 @@ ptr-!alias[ stack] ptr4;
 
 本规范支持补充规则，补充规则的原则是编译器忽略完全忽略编译器和用户设定的补充规则不会引起错误。
 
-- 在默认规则中相交非空的两个抽象域，可以通过额外规则把它们的相交设定为空。反之，在默认规则中相交为空的两个抽象域，不能使用额外规则把它们设置为相交不为空。
+### 额外无交假定
+
+本规范支持补充规则，其核心原则是：编译器即使完全忽略用户设定的补充规则，也不会引起分析错误。
+
+- **保守性保证**：在默认规则中相交非空的两个抽象域，可以通过额外规则将其相交关系设定为空。反之，在默认规则中已经相交为空的两个抽象域，**不允许**通过额外规则将其设置为相交非空。这一限制确保了补充规则只能进一步严格化别名分析，而不能放松安全性约束。
+
+- **语法格式**：使用指令 `#AliasNoIntersection(id_1, id_2)` 来声明两个抽象域 `id_1` 和 `id_2` 无交集。
+
+#### 示例
+
+假设已有以下抽象域定义：
+```
+#aliasTree(type, AliasRoot, Inclusive)
+#aliasTree(int, type, WeakExclusive)
+#aliasTree(float, type, WeakExclusive)
+
+#aliasTree(scope, AliasRoot, Inclusive)  
+#aliasTree(stack, scope, WeakExclusive)
+#aliasTree(heap, scope, WeakExclusive)
+```
+
+根据默认的互斥属性规则，`int` 和 `stack` 域可能存在交集（即可能存在既是整型又位于栈上的指针）。
+
+如果程序特定地保证了“整型指针绝不会指向栈内存”，则可通过补充规则声明：
+```
+#AliasNoIntersection(int, stack)
+```
+
+**效果**：
+- 声明后，编译器可据此优化，判定属于 `int` 域的指针与属于 `stack` 域的指针绝无别名。
+- 即使编译器实现选择忽略此条 `#AliasNoIntersection` 规则，它仍会按照默认的 `WeakExclusive` 属性进行可能更保守的分析，这不会导致错误的优化，只是可能错过一些优化机会。
+
+**错误示例**（违反规范）：
+```
+# 错误：不能将默认无交的域声明为有交
+#AliasNoIntersection(int, float) # 此声明无效且应被编译器忽略或报错
+```
+因为 `int` 和 `float` 节点在父节点 `type` 下均为 `WeakExclusive` 属性，根据核心规则表，它们默认已无交。此类声明被禁止，以维护整个别名分析系统的可靠性与一致性。
 
 
+## 错误处理
 
 
 
