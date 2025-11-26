@@ -309,7 +309,7 @@ $(\text{int} \cap \text{stack}) \parallel (\text{float} \cap \text{stack})$
 
 | 错误类型 | 触发条件 | 示例（错误） | 说明 |
 | :--- | :--- | :--- | :--- |
-| **节点重名** | 使用 `#AliasTree` 指令创建了同名的节点。 | `#AliasTree(A, ...)`<br>`#AliasTree(A, ...)` | 节点标识符必须在整个树中唯一。 |
+| **节点重名** | 使用 `#AliasTree` 指令创建了同名的节点（包括根节点）。 | `#AliasTree(A, ...)`<br>`#AliasTree(A, ...)` | 节点标识符必须在整个树中唯一。 |
 | **引用未定义父节点** | 在 `#AliasTree` 指令中，`parent_id` 指向一个未定义的节点。 | `#AliasTree(Child, UndefinedParent, ...)` | 父节点必须先行定义。 |
 | **非法互斥属性** | 在 `#AliasTree` 指令中，`attri_id` 不是四个预定义的属性标识符之一。 | `#AliasTree(N, P, InvalidAttr)` | 属性必须是 `Exclusive`, `WeakExclusive`, `WeakInclusive`, `Inclusive` 之一。 |
 | **指针域表达式语法错误** | `-!alias[...]` 内的集合表达式存在语法错误，如括号不匹配、使用了未定义的节点标识符或运算符错误。 | `-!alias[ (int && stack ] ptr;` （括号不匹配）<br>`-!alias[ unknownNode ] ptr;` （节点未定义） | 表达式必须符合规定的类C语法。 |
