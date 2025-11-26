@@ -28,9 +28,9 @@
 
 ## 建立抽象域构成的树
 
-通过 `#aliasTree`指令建立抽象树的节点。语法规则如下 `#aliasTree(name_id, parent_id, attri_id)`
+通过 `#aliasTree`指令建立抽象树的节点。语法规则如下 `#aliasTree(name_id, parent_id, attri_id)`。这种建立规则仅仅能出现在函数定义之间。
 
-`name_id`是节点名标识符，这棵树的任意两个节点不得重名。根节点的名字为`AliasRoot`,此外编译器会自动为这个根生成一个虚拟的父节点`AliasRootRoot`。所以编译器和程序员手工添加的新节点均不得与上述两节点重名。`parent_id`指定父节点标识符，而`attri_id`决定了它的互斥属性，四个属性对应的标识符分别为。
+`name_id`是节点名标识符，这棵树的任意两个节点不得重名。根节点的名字为`AliasRoot`,此外编译器会自动为这个根生成一个虚拟的父节点`AliasRootRoot`。根节点的虚拟父节点是为了简化实现程序的复杂度，有些判断需要提升到根节点，此时如果它有一个父节点，那么可以用同一套逻辑处理根节点和用户自定义节点。所以编译器和程序员手工添加的新节点均不得与上述两节点重名。`parent_id`指定父节点标识符，而`attri_id`决定了它的互斥属性，四个属性对应的标识符分别为。
 
 - 强互斥，`Exclusive`
 - 弱互斥，`WeakExclusive`
@@ -41,12 +41,27 @@
 
 ```
 #aliasTree(type, AliasRoot, Inclusive)
-#aliasTree(type, AliasRoot, Inclusive)
+#aliasTree(scope, AliasRoot, Inclusive)
+
+#aliasTree(int, type, WeakExclusive)
+#aliasTree(float, type, WeakExclusive)
+#aliasTree(void, type, Inclusive)
+
+#aliasTree(int64, int, WeakExclusive)
+#aliasTree(intDefault, int, Inclusive)
+#aliasTree(int32, int, WeakExclusive)
+
+#aliasTree(float64, float, WeakExclusive)
+#aliasTree(floatDefault, float, Inclusive)
+#aliasTree(float32, float, WeakExclusive)
+
+#aliasTree(stack, scope, WeakExclusive) 
+#aliasTree(heap, scope, WeakExclusive)
+
+#aliasTree(restrict, AliasRoot, Exclusive)
 ```
 
-
-
-## 通过集合运算判断指针别名
+### 规定指针从属的域
 
 一个指针类型可以按照C语言风格的交并非的集合运算指定它从属的虚拟集合。这种风格如下，支持小括号指定运算的优先级，或运算`||`表示两个节点的并集，与运算`&&`表示两个节点的交集。非运算`!`左右在一个独立的节点上表示一个节点在**根节点**中的补集合（注意不是父节点）。优先级设定与C语言一致。
 
@@ -57,6 +72,11 @@ ptr-!alias[ (int && stack) || (real && heap)] ptr_2;
 ptr-!alias[ int ] ptr3;
 ptr-!alias[ stack] ptr4;
 ```
+
+
+
+## 通过集合运算判断指针别名
+
 
 **基本规定** 两个变量所属的域是无交的，那么两个指针不会重名。
 
@@ -89,7 +109,7 @@ ptr-!alias[ stack] ptr4;
 
 
 
-### 规定指针从属的域
+
 
 
 
