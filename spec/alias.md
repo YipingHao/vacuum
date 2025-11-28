@@ -8,58 +8,94 @@
 
 在本模型中，全体域都从属一个树状关系，编译器自动为这颗树生成统一的虚拟根。树状关系自动表达了从属，一个节点对应必然属于它的父节点。属于关系是一种偏序，是自反传递的。所以全部的抽象域构成了一个半格。我们设计的核心因素之一就是，并不假定一个父节点下属的全体子节点相交非空或者说它们是否互斥。举个例子，虚拟根节点，可以下属类型子树和域子树。类型子树和域子树，可以是相交的，并不互斥。一个指针可以同时是双精度浮点的堆中指针。
 
-## 节点属性
 
-既然全体抽象域之间存在一个树状关系，我们也可以称每个**抽象域**为**节点**。我们的抽象规则规定，每一个节点必须通过一个关键字设定与它的兄弟的节点的关系。这种关系名字叫做**互斥属性**。互斥属性分为四类，分别是：强互斥，弱互斥，弱相交，强相交。某一个节点A与它的兄弟节点B相交是否非空，几乎由这两个节点的互斥属性决定。它们相交运算的结果如下。
+## 节点属性与相交关系
 
-|   相交关系  | 强互斥 | 弱互斥 | 弱相交 | 强相交 |
-|----------- |--------|-------|--------|-------|
-|    强互斥   |    N   |   N   |   N   |    N   |
-|    弱互斥   |    N   |   N  |   N   |    T  |
-|    弱相交   |    N   |   N   |   T   |     T  |
-|    强相交   |    N   |   T   |    T  |     T  |
+在树状抽象域模型中，每个**抽象域**称为**节点**。每个节点必须通过**互斥属性**定义其与兄弟节点的基本关系。互斥属性分为两类：
 
+- **互斥（Exclusive）**：表示节点与兄弟节点互不相交
+- **相交（Inclusive）**：表示节点与兄弟节点可能相交
 
-- 任意基本节点相交运算规则又名**提升规则**：互斥属性决定了任意两个节点的基本运算规则：如果两个集合A与B没有从属于同一个父节点，那么逐级向上寻找它们的深度最小的公共祖先C。随后找到公共祖先C的全体子节点中这两个集合各自的祖先节点D与E。 D与E的相交结果就是A与B相交的结果。
+### 相交关系判定规则
 
-- 全集规则: 假定每一个集合都有自身独占，不属于兄弟节点的内部。所以一些兄弟节点的并集是父节点，当且仅当并集运算包含了全部的兄弟节点。
+两个节点A和B的相交关系由它们的互斥属性和**局部优先级**共同决定：
 
+1. **相同属性节点**：
+   - 两个互斥节点：必然不相交（N）
+   - 两个相交节点：必然相交（T）
 
+2. **不同属性节点**（一个互斥，一个相交）：
+   - 如果相交节点的优先级 > 互斥节点的优先级，则相交（T）
+   - 如果优先级相同或互斥节点优先级更高，则不相交（N）
 
-## 建立抽象域构成的树
+### 提升规则（关键算法）
 
-通过 `#AliasTree`指令建立抽象树的节点。语法规则如下 `#AliasTree(name_id, parent_id, attri_id)`。这种建立规则仅仅能出现在函数定义之间。
+当需要判断任意两个节点A和B的相交关系时：
 
-`name_id`是节点名标识符，这棵树的任意两个节点不得重名。根节点的名字为`AliasRoot`。有时编译器会自动为这个根生成一个虚拟的父节点。根节点的虚拟父节点是为了简化实现程序的复杂度，有些判断需要提升到根节点，此时如果它有一个父节点，那么可以用同一套逻辑处理根节点和用户自定义节点。不过这个节点对于程序员是透明的。所以编译器和程序员手工添加的新节点均不得与上述两节点重名。`parent_id`指定父节点标识符，而`attri_id`决定了它的互斥属性，四个属性对应的标识符分别为。
+1. 如果A和B是**兄弟节点**（同一父节点）：
+   - 直接应用上述基于属性和优先级的相交规则
 
-- 强互斥，`Exclusive`
-- 弱互斥，`WeakExclusive`
-- 弱相交，`WeakInclusive`
-- 强相交, `Inclusive`
+2. 如果A和B**不是兄弟节点**：
+   - 寻找它们深度最小的**公共祖先节点C**
+   - 在C的直接子节点中，找到A的祖先节点D和B的祖先节点E
+   - D和E是兄弟节点，它们的相交结果即为A和B的相交结果
 
-例子 
+### 全集规则
 
+假定每个节点都有其独占部分，不属于任何兄弟节点。因此：
+- 兄弟节点的并集等于父节点，**当且仅当**并集包含了该父节点的所有直接子节点
+
+## 抽象域树的构建
+
+### 语法定义
+
+使用 `#AliasTree` 指令构建抽象域树节点：
 ```
-#AliasTree(type, AliasRoot, Inclusive)
-#AliasTree(scope, AliasRoot, Inclusive)
-
-#AliasTree(int, type, WeakExclusive)
-#AliasTree(float, type, WeakExclusive)
-#AliasTree(void, type, Inclusive)
-
-#AliasTree(int64, int, WeakExclusive)
-#AliasTree(intDefault, int, Inclusive)
-#AliasTree(int32, int, WeakExclusive)
-
-#AliasTree(float64, float, WeakExclusive)
-#AliasTree(floatDefault, float, Inclusive)
-#AliasTree(float32, float, WeakExclusive)
-
-#AliasTree(stack, scope, WeakExclusive) 
-#AliasTree(heap, scope, WeakExclusive)
-
-#AliasTree(restrict, AliasRoot, Exclusive)
+#AliasTree(name_id, parent_id, attri_id, priority)
 ```
+
+**参数说明**：
+- `name_id`：节点唯一标识符，全树范围内不得重名
+- `parent_id`：父节点标识符，必须引用已定义的节点
+- `attri_id`：互斥属性，取值为：
+  - `Exclusive`：互斥属性
+  - `Inclusive`：相交属性
+- `priority`：局部优先级，无符号整数字面量，需用反引号包裹
+
+**特殊节点**：
+- 根节点名为 `AliasRoot`
+- 用户定义节点不得与上述特殊节点重名
+
+### 构建示例
+
+```plaintext
+# 第一层：类型和作用域域
+#AliasTree(type, AliasRoot, Inclusive, `3`)
+#AliasTree(scope, AliasRoot, Inclusive, `3`)
+
+# 类型子树
+#AliasTree(int, type, Exclusive, `1`)
+#AliasTree(float, type, Exclusive, `1`)
+#AliasTree(void, type, Inclusive, `3`)
+
+# 整型子树
+#AliasTree(int64, int, Exclusive, `1`)
+#AliasTree(intDefault, int, Inclusive, `3`)
+#AliasTree(int32, int, Exclusive, `1`)
+
+# 浮点型子树
+#AliasTree(float64, float, Exclusive, `1`)
+#AliasTree(floatDefault, float, Inclusive, `3`)
+#AliasTree(float32, float, Exclusive, `1`)
+
+# 作用域子树
+#AliasTree(stack, scope, Exclusive, `1`) 
+#AliasTree(heap, scope, Exclusive, `1`)
+
+# 特殊限制域
+#AliasTree(restrict, AliasRoot, Exclusive, `3`)
+```
+
 
 
 ### 规定指针从属的域
@@ -270,13 +306,13 @@ $(\text{int} \cap \text{stack}) \parallel (\text{float} \cap \text{stack})$
 
 假设已有以下抽象域定义：
 ```
-#aliasTree(type, AliasRoot, Inclusive)
-#aliasTree(int, type, WeakExclusive)
-#aliasTree(float, type, WeakExclusive)
+#aliasTree(type, AliasRoot, Inclusive, `3`)
+#aliasTree(int, type, Exclusive, `3`)
+#aliasTree(float, type, Exclusive, `3`)
 
-#aliasTree(scope, AliasRoot, Inclusive)  
-#aliasTree(stack, scope, WeakExclusive)
-#aliasTree(heap, scope, WeakExclusive)
+#aliasTree(scope, AliasRoot, Inclusive, `3`)  
+#aliasTree(stack, scope, Exclusive, `1`)
+#aliasTree(heap, scope, Exclusive, `1`)
 ```
 
 根据默认的互斥属性规则，`int` 和 `stack` 域可能存在交集（即可能存在既是整型又位于栈上的指针）。
@@ -288,14 +324,14 @@ $(\text{int} \cap \text{stack}) \parallel (\text{float} \cap \text{stack})$
 
 **效果**：
 - 声明后，编译器可据此优化，判定属于 `int` 域的指针与属于 `stack` 域的指针绝无别名。
-- 即使编译器实现选择忽略此条 `#AliasNoIntersection` 规则，它仍会按照默认的 `WeakExclusive` 属性进行可能更保守的分析，这不会导致错误的优化，只是可能错过一些优化机会。
+- 即使编译器实现选择忽略此条 `#AliasNoIntersection` 规则，它仍会按照默认的 `Exclusive` 属性进行可能更保守的分析，这不会导致错误的优化，只是可能错过一些优化机会。
 
 **错误示例**（违反规范）：
 ```
 # 错误：不能将默认无交的域声明为有交
 #AliasNoIntersection(int, float) # 此声明无效且应被编译器忽略或报错
 ```
-因为 `int` 和 `float` 节点在父节点 `type` 下均为 `WeakExclusive` 属性，根据核心规则表，它们默认已无交。此类声明被禁止，以维护整个别名分析系统的可靠性与一致性。
+因为 `int` 和 `float` 节点在父节点 `type` 下均为 `Exclusive` 属性，根据核心规则表，它们默认已无交。此类声明被禁止，以维护整个别名分析系统的可靠性与一致性。
 
 
 
@@ -311,7 +347,7 @@ $(\text{int} \cap \text{stack}) \parallel (\text{float} \cap \text{stack})$
 | :--- | :--- | :--- | :--- |
 | **节点重名** | 使用 `#AliasTree` 指令创建了同名的节点（包括根节点）。 | `#AliasTree(A, ...)`<br>`#AliasTree(A, ...)` | 节点标识符必须在整个树中唯一。 |
 | **引用未定义父节点** | 在 `#AliasTree` 指令中，`parent_id` 指向一个未定义的节点。 | `#AliasTree(Child, UndefinedParent, ...)` | 父节点必须先行定义。 |
-| **非法互斥属性** | 在 `#AliasTree` 指令中，`attri_id` 不是四个预定义的属性标识符之一。 | `#AliasTree(N, P, InvalidAttr)` | 属性必须是 `Exclusive`, `WeakExclusive`, `WeakInclusive`, `Inclusive` 之一。 |
+| **非法互斥属性** | 在 `#AliasTree` 指令中，`attri_id` 不是四个预定义的属性标识符之一。 | `#AliasTree(N, P, InvalidAttr)` | 属性必须是 `Exclusive`, `Inclusive` 之一。 |
 | **指针域表达式语法错误** | `-!alias[...]` 内的集合表达式存在语法错误，如括号不匹配、使用了未定义的节点标识符或运算符错误。 | `-!alias[ (int && stack ] ptr;` （括号不匹配）<br>`-!alias[ unknownNode ] ptr;` （节点未定义） | 表达式必须符合规定的类C语法。 |
 | **补充规则冲突** | 使用 `#AliasNoIntersection` 试图将默认规则中已无交的两个域声明为无交。 | `#AliasNoIntersection(int, float)` （假设它们默认已弱互斥） | 补充规则只能收紧约束，不能放松。 |
 
@@ -327,42 +363,124 @@ $(\text{int} \cap \text{stack}) \parallel (\text{float} \cap \text{stack})$
 通过以上的错误处理规定，可以确保别名模型信息在源头上是正确和一致的，为后续的别名分析和优化奠定可靠的基础。
 
 
-## 文法规则伪代码
 
+## 文法规则规范
 
 ### 1. 抽象域树定义文法
 
+#### 程序结构
 ```
-// 抽象域树定义部分
 Program ::= (AliasTreeDefinition | AliasNoIntersection)*
+```
 
-AliasTreeDefinition ::= "#AliasTree" "(" NodeName "," ParentNode "," Attribute ")" 
+#### 抽象域节点定义
+```
+AliasTreeDefinition ::= "#AliasTree" "(" NodeName "," ParentNode "," Attribute "," Priority ")"
 
-NodeName ::= Identifier
-ParentNode ::= Identifier
-Attribute ::= "Exclusive" | "WeakExclusive" | "WeakInclusive" | "Inclusive"
+NodeName      ::= Identifier
+ParentNode    ::= Identifier
+Attribute     ::= "Exclusive" | "Inclusive"
+Priority      ::= "`" UnsignedInteger "`"
+```
 
+**语义说明**：
+- `NodeName` 必须在整个抽象域树中唯一
+- `ParentNode` 必须引用已定义的节点（除根节点 `AliasRoot` 外）
+- `Priority` 为无符号整数，仅在**同一父节点下的兄弟节点之间**具有比较意义
+- 根节点 `AliasRoot` 由系统预定义，不需要也不允许用户定义
+
+#### 补充无交规则
+```
 AliasNoIntersection ::= "#AliasNoIntersection" "(" NodeName "," NodeName ")"
 ```
 
+**语义约束**：
+- 两个 `NodeName` 必须引用已定义的节点
+- 该规则只能将默认规则中**可能相交**的节点声明为无交
+- 不能将默认规则中**已经无交**的节点声明为有交（此类声明将被忽略或报错）
+
 ### 2. 指针别名注解文法
 
+#### 变量声明语法
 ```
-// 指针别名注解部分（嵌入在变量声明中）
 VariableDeclaration ::= TypeSpecifier AliasAnnotation? Identifier 
 
 AliasAnnotation ::= "-!alias" "[" DomainExpression "]"
-                   | "-!alias" "[" "]"  // 空规则体，表示根节点
-
-DomainExpression ::= DomainTerm
-                   | DomainExpression "||" DomainTerm
-
-DomainTerm ::= DomainFactor
-              | DomainTerm "&&" DomainFactor
-
-DomainFactor ::= NodeName
-               | "!" DomainFactor
-               | "(" DomainExpression ")"
-
-NodeName ::= Identifier  // 引用已定义的抽象域节点
+                  | "-!alias" "[" "]"  // 空规则体：表示根节点 AliasRoot
 ```
+
+**语义说明**：
+- 注解以 `-!alias` 开头，后接用方括号包裹的域表达式
+- 空规则体 `[]` 表示该指针属于根节点（最保守的别名假设）
+- 完全省略注解的指针默认属于根节点（安全性优先原则）
+
+#### 域表达式语法
+```
+DomainExpression ::= DomainTerm
+                   | DomainExpression "||" DomainTerm        // 并集运算
+
+DomainTerm       ::= DomainFactor
+                   | DomainTerm "&&" DomainFactor            // 交集运算
+
+DomainFactor     ::= NodeReference
+                   | "!" DomainFactor                        // 补集运算
+                   | "(" DomainExpression ")"                // 括号分组
+
+NodeReference    ::= Identifier  // 必须引用已定义的抽象域节点
+```
+
+#### 运算符优先级与结合性
+按优先级从高到低排列：
+
+| 运算符 | 名称 | 优先级 | 结合性 | 说明 |
+|--------|------|--------|--------|------|
+| `!` | 逻辑非 | 最高 | 从右到左 | 相对于 AliasRoot 的补集 |
+| `&&` | 逻辑与 | 中等 | 从左到右 | 集合交集运算 |
+| `||` | 逻辑或 | 最低 | 从左到右 | 集合并集运算 |
+
+### 3. 完整语法示例
+
+#### 抽象域定义示例
+```plaintext
+#AliasTree(type, AliasRoot, Inclusive, `3`)
+#AliasTree(int, type, Exclusive, `1`)
+#AliasTree(float, type, Exclusive, `1`)
+#AliasTree(stack, AliasRoot, Exclusive, `2`)
+#AliasNoIntersection(int, stack)
+```
+
+#### 指针声明示例
+```plaintext
+// 简单节点引用
+ptr-!alias[int] ptr1;
+
+// 交集运算
+ptr-!alias[int && stack] ptr2;
+
+// 并集运算  
+ptr-!alias[(int && stack) || (float && heap)] ptr3;
+
+// 补集运算
+ptr-!alias[!int && type] ptr4;
+
+// 空规则体（根节点）
+ptr-!alias[] ptr5;
+
+// 无注解（默认根节点）
+ptr ptr6;
+```
+
+### 4. 语法约束与验证
+
+#### 编译时检查
+编译器必须在编译时验证以下约束：
+1. **节点唯一性**：所有 `NodeName` 必须唯一
+2. **父节点存在性**：`ParentNode` 必须已定义（根节点 `AliasRoot` 除外）
+3. **节点引用有效性**：所有 `NodeReference` 必须指向已定义的节点
+4. **表达式语法正确性**：括号匹配、运算符使用正确
+5. **优先级数值有效性**：`Priority` 必须为无符号整数
+
+#### 错误处理
+违反上述约束应导致编译错误，确保别名分析模型的完整性和一致性。
+
+这个重构后的文法规范更加严谨，明确了优先级的作用范围，保持了与语义规则的一致性，并提供了清晰的语法示例和约束条件。
